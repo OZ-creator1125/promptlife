@@ -21,6 +21,7 @@ export default function HomePage() {
   const [platform, setPlatform] = useState("ChatGPT");
   const [mode, setMode] = useState<PromptMode>("basico");
   const [result, setResult] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [dailyUsed, setDailyUsed] = useState(0);
   const [totalCounter, setTotalCounter] = useState(32541);
@@ -79,16 +80,17 @@ export default function HomePage() {
       return;
     }
 
+    setErrorMessage("");
+    setCopied(false);
+
     if (mode === "basico" && dailyUsed >= DAILY_LIMIT) {
-      setResult(
-        "Error: Ya usaste tu prompt gratis de hoy. Desbloquea Premium o Experto cuando activemos suscripciones."
+      setErrorMessage(
+        "Ya usaste tu prompt gratis de hoy. Desbloquea Premium o Experto cuando activemos suscripciones."
       );
       return;
     }
 
     setLoading(true);
-    setCopied(false);
-    setResult("");
 
     try {
       const response = await fetch("/api/generate", {
@@ -113,17 +115,18 @@ export default function HomePage() {
       try {
         data = JSON.parse(text);
       } catch {
-        setResult(`Error del servidor:\n\n${text}`);
+        setErrorMessage("Error del servidor.");
         return;
       }
 
       if (!response.ok) {
-        setResult(`Error: ${data.error || "No se pudo generar el prompt."}`);
+        setErrorMessage(data.error || "No se pudo generar el prompt.");
         return;
       }
 
       setResult(data.prompt || "No se generó ningún prompt.");
       setVisibleMode(data.visibleMode || "Básico");
+      setErrorMessage("");
 
       if (mode === "basico") {
         updateDailyUsage(dailyUsed + 1);
@@ -133,8 +136,8 @@ export default function HomePage() {
         updateTotalCounter(data.counterIncrement);
       }
     } catch (error: any) {
-      setResult(
-        `Error: ${error?.message || "Ocurrió un error al generar el prompt."}`
+      setErrorMessage(
+        error?.message || "Ocurrió un error al generar el prompt."
       );
     } finally {
       setLoading(false);
@@ -142,10 +145,11 @@ export default function HomePage() {
   }
 
   async function translatePrompt() {
-    if (!result || result.startsWith("Error:")) return;
+    if (!result.trim()) return;
 
     setTranslating(true);
     setCopied(false);
+    setErrorMessage("");
 
     try {
       const response = await fetch("/api/translate", {
@@ -164,19 +168,19 @@ export default function HomePage() {
       try {
         data = JSON.parse(text);
       } catch {
-        setResult(`Error del servidor al traducir:\n\n${text}`);
+        setErrorMessage("Error del servidor al traducir.");
         return;
       }
 
       if (!response.ok) {
-        setResult(`Error: ${data.error || "No se pudo traducir el prompt."}`);
+        setErrorMessage(data.error || "No se pudo traducir el prompt.");
         return;
       }
 
       setResult(data.prompt || result);
     } catch (error: any) {
-      setResult(
-        `Error: ${error?.message || "Ocurrió un error al traducir."}`
+      setErrorMessage(
+        error?.message || "Ocurrió un error al traducir."
       );
     } finally {
       setTranslating(false);
@@ -184,7 +188,7 @@ export default function HomePage() {
   }
 
   function copyPrompt() {
-    if (!result) return;
+    if (!result.trim()) return;
 
     navigator.clipboard.writeText(result);
     setCopied(true);
@@ -334,6 +338,12 @@ export default function HomePage() {
             </p>
           </div>
 
+          {errorMessage && (
+            <div className="mx-auto mt-6 max-w-4xl rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-200">
+              {errorMessage}
+            </div>
+          )}
+
           {result && (
             <div className="mx-auto mt-8 max-w-4xl rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl backdrop-blur">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -364,7 +374,7 @@ export default function HomePage() {
 
                 <button
                   onClick={translatePrompt}
-                  disabled={translating || result.startsWith("Error:")}
+                  disabled={translating || !result.trim()}
                   className="rounded-xl border border-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {translating ? "Traduciendo..." : "Traducir"}
