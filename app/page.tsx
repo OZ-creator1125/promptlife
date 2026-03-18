@@ -108,7 +108,7 @@ export default function HomePage() {
       });
 
       const text = await response.text();
-      let data;
+      let data: any;
 
       try {
         data = JSON.parse(text);
@@ -159,12 +159,12 @@ export default function HomePage() {
       });
 
       const text = await response.text();
-      let data;
+      let data: any;
 
       try {
         data = JSON.parse(text);
       } catch {
-        setResult(`Error del servidor:\n\n${text}`);
+        setResult(`Error del servidor al traducir:\n\n${text}`);
         return;
       }
 
