@@ -26,6 +26,8 @@ export default function HomePage() {
   const [totalCounter, setTotalCounter] = useState(32541);
   const [visibleMode, setVisibleMode] = useState("Básico");
   const [website, setWebsite] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [translating, setTranslating] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -85,6 +87,7 @@ export default function HomePage() {
     }
 
     setLoading(true);
+    setCopied(false);
     setResult("");
 
     try {
@@ -139,23 +142,19 @@ export default function HomePage() {
   }
 
   async function translatePrompt() {
-    if (!result) return;
+    if (!result || result.startsWith("Error:")) return;
 
-    setLoading(true);
+    setTranslating(true);
+    setCopied(false);
 
     try {
-      const response = await fetch("/api/generate", {
+      const response = await fetch("/api/translate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          idea: `Traduce al español el siguiente prompt y devuelve únicamente el prompt traducido:\n\n${result}`,
-          category,
-          detail,
-          platform,
-          mode: "basico",
-          website,
+          text: result,
         }),
       });
 
@@ -180,8 +179,19 @@ export default function HomePage() {
         `Error: ${error?.message || "Ocurrió un error al traducir."}`
       );
     } finally {
-      setLoading(false);
+      setTranslating(false);
     }
+  }
+
+  function copyPrompt() {
+    if (!result) return;
+
+    navigator.clipboard.writeText(result);
+    setCopied(true);
+
+    setTimeout(() => {
+      setCopied(false);
+    }, 2000);
   }
 
   const dailyRemaining = Math.max(0, DAILY_LIMIT - dailyUsed);
@@ -319,7 +329,8 @@ export default function HomePage() {
             </button>
 
             <p className="mt-4 text-center text-sm text-white/55">
-              Básico gratis: 1 al día. Premium y Experto estarán disponibles con suscripción.
+              Básico gratis: 1 al día. Premium y Experto estarán disponibles con
+              suscripción.
             </p>
           </div>
 
@@ -329,6 +340,7 @@ export default function HomePage() {
                 <p className="text-sm uppercase tracking-widest text-white/50">
                   Prompt generado
                 </p>
+
                 <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs text-white/70">
                   Modo: {visibleMode}
                 </span>
@@ -340,17 +352,22 @@ export default function HomePage() {
 
               <div className="mt-4 flex flex-wrap gap-3">
                 <button
-                  onClick={() => navigator.clipboard.writeText(result)}
-                  className="rounded-xl border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
+                  onClick={copyPrompt}
+                  className={`rounded-xl border px-4 py-2 text-sm font-medium transition ${
+                    copied
+                      ? "border-green-400 bg-green-500 text-white"
+                      : "border-white/10 text-white hover:bg-white/10"
+                  }`}
                 >
-                  Copiar Prompt
+                  {copied ? "✓ Copiado" : "Copiar Prompt"}
                 </button>
 
                 <button
                   onClick={translatePrompt}
-                  className="rounded-xl border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
+                  disabled={translating || result.startsWith("Error:")}
+                  className="rounded-xl border border-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Traducir al Español
+                  {translating ? "Traduciendo..." : "Traducir al Español"}
                 </button>
               </div>
             </div>
