@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 const DAILY_LIMIT = 1;
 const STORAGE_KEY = "promptlife_daily_usage";
 const COUNTER_KEY = "promptlife_total_prompts";
+const TEST_MODE = process.env.NEXT_PUBLIC_TEST_MODE === "true";
 
 function getTodayKey() {
   const now = new Date();
@@ -93,7 +94,7 @@ export default function HomePage() {
       return;
     }
 
-    if (dailyUsed >= DAILY_LIMIT) {
+    if (!TEST_MODE && dailyUsed >= DAILY_LIMIT) {
       setErrorMessage("Ya usaste tu prompt gratis de hoy.");
       return;
     }
@@ -130,7 +131,9 @@ export default function HomePage() {
       setResult(data.prompt || "");
       setTimeLeft(30);
 
-      updateUsage();
+      if (!TEST_MODE) {
+        updateUsage();
+      }
 
       const nextCounter = counter + 1;
       setCounter(nextCounter);
@@ -200,25 +203,43 @@ export default function HomePage() {
       <section className="mx-auto flex min-h-screen max-w-6xl items-center px-6 py-16">
         <div className="w-full">
           <div className="mx-auto max-w-4xl text-center">
+            {TEST_MODE && (
+              <div className="mb-4 text-center text-xs text-yellow-400">
+                ⚠️ Modo prueba activo
+              </div>
+            )}
+
             <div className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70">
               1 prompt gratis al día · Premium $5 USD/mes
             </div>
 
             <h1 className="mt-6 text-5xl font-bold tracking-tight md:text-7xl">
-              PromptLife
+              Convierte cualquier idea en prompts que venden, automatizan o crecen tu negocio
             </h1>
 
             <p className="mt-6 text-lg leading-8 text-white/70 md:text-xl">
-              Convierte cualquier idea en un prompt profesional, claro y listo
-              para usar con IA.
+              Genera prompts listos para usar que te ahorran tiempo, aumentan resultados y te dan ventaja con IA en segundos.
             </p>
 
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-sm text-white/60">
               <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2">
                 Prompts generados: {counter.toLocaleString()}
               </span>
-              <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2">
-                Gratis restantes hoy: {dailyRemaining}
+
+              {!TEST_MODE && (
+                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2">
+                  Gratis restantes hoy: {dailyRemaining}
+                </span>
+              )}
+
+              {TEST_MODE && (
+                <span className="rounded-full border border-yellow-400/20 bg-yellow-400/5 px-4 py-2 text-yellow-300">
+                  Pruebas ilimitadas activas
+                </span>
+              )}
+
+              <span className="rounded-full border border-green-400/20 bg-green-400/10 px-4 py-2 text-green-300">
+                🔥 Usuarios generando prompts en este momento
               </span>
             </div>
           </div>
@@ -256,12 +277,15 @@ export default function HomePage() {
               disabled={loading}
               className="mt-5 w-full rounded-2xl bg-white px-5 py-4 text-base font-semibold text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {loading ? "Generando..." : "Generar Prompt Profesional"}
+              {loading ? "Generando..." : "Generar Prompt que Funciona"}
             </button>
 
+            <p className="mt-3 text-center text-xs text-white/50">
+              ⚡ Resultados en segundos · sin experiencia necesaria
+            </p>
+
             <p className="mt-4 text-center text-sm text-white/55">
-              Genera una vista previa gratis. Después puedes copiarla o
-              enviártela a tu correo.
+              Genera una vista previa gratis. Después puedes copiarla o enviártela a tu correo.
             </p>
           </div>
 
@@ -283,9 +307,17 @@ export default function HomePage() {
                 </span>
               </div>
 
+              <p className="mb-2 text-sm text-green-400">
+                ✔️ Prompt optimizado para resultados reales
+              </p>
+
               <pre className="whitespace-pre-wrap text-sm leading-7 text-white/90">
                 {result}
               </pre>
+
+              <p className="mt-4 text-xs text-white/40">
+                Generated with PromptLife
+              </p>
 
               <div className="mt-4 flex flex-wrap gap-3">
                 <button
@@ -330,9 +362,7 @@ export default function HomePage() {
                 </div>
 
                 <div className="mt-3 text-xs text-cyan-300">
-                  No te llenes de spam y protege tu privacidad con correos
-                  temporales. Quantum Mail es tu mejor opción para evitar basura
-                  y registros invasivos.
+                  No te llenes de spam y protege tu privacidad con correos temporales. Quantum Mail es tu mejor opción para evitar basura y registros invasivos.
                 </div>
               </div>
             </div>
@@ -344,8 +374,7 @@ export default function HomePage() {
             </p>
 
             <p className="mt-2 text-lg font-semibold text-cyan-200">
-              Quantum Mail te ayuda a proteger tu privacidad con correos
-              temporales al instante.
+              Quantum Mail te ayuda a proteger tu privacidad con correos temporales al instante.
             </p>
 
             <button className="mt-4 rounded-2xl border border-cyan-300/30 px-5 py-3 text-sm font-medium text-cyan-100 transition hover:bg-cyan-300/10">

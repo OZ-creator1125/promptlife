@@ -44,40 +44,38 @@ function buildPrompt(idea: string, language: "es" | "en") {
   const trimmedIdea = idea.trim();
 
   if (language === "es") {
-    return `Actúa como un experto en la materia más adecuada para resolver esta solicitud.
+    return `Actúa como un experto en inteligencia artificial, marketing y generación de contenido.
 
-Objetivo:
-Convierte la siguiente idea en una tarea clara, útil y bien estructurada para una IA:
+Tu objetivo es convertir la siguiente idea en un prompt altamente efectivo, claro y orientado a resultados reales.
 
+IDEA:
 ${trimmedIdea}
 
-Instrucciones:
-- Interpreta correctamente la intención del usuario.
-- Estructura la respuesta de forma clara y accionable.
-- Añade contexto útil cuando haga falta.
-- Prioriza calidad, claridad y utilidad práctica.
-- Entrega una salida lista para usar.
+INSTRUCCIONES:
+- Escribe el prompt como si fuera a usarse directamente en ChatGPT
+- Hazlo específico, estructurado y accionable
+- Incluye contexto, objetivo claro y formato esperado
+- Optimízalo para obtener resultados de alto nivel
 
-Formato de salida:
-Devuelve una respuesta bien organizada, profesional y fácil de aplicar.`;
+FORMATO FINAL:
+Entrega únicamente el prompt final listo para copiar, sin explicaciones adicionales.`;
   }
 
-  return `Act as an expert in the most appropriate field to solve this request.
+  return `Act as an expert in AI, marketing, and content generation.
 
-Goal:
-Turn the following idea into a clear, useful, and well-structured task for an AI:
+Your goal is to turn the following idea into a highly effective, clear, and results-oriented prompt.
 
+IDEA:
 ${trimmedIdea}
 
-Instructions:
-- Correctly interpret the user's intent.
-- Structure the response in a clear and actionable way.
-- Add useful context when needed.
-- Prioritize quality, clarity, and practical usefulness.
-- Deliver an output that is ready to use.
+INSTRUCTIONS:
+- Write the prompt as if it will be used directly in ChatGPT
+- Make it specific, structured, and actionable
+- Include context, a clear objective, and the expected format
+- Optimize it to get high-level results
 
-Output format:
-Return a well-organized, professional, and easy-to-apply response.`;
+FINAL FORMAT:
+Return only the final prompt, ready to copy, with no extra explanations.`;
 }
 
 export async function POST(req: Request) {
