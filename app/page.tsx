@@ -128,7 +128,7 @@ export default function HomePage() {
       }
 
       setResult(data.prompt || "");
-      setTimeLeft(60);
+      setTimeLeft(30);
 
       updateUsage();
 
