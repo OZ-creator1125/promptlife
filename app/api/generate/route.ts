@@ -3,36 +3,11 @@ import { NextResponse } from "next/server";
 function detectLanguage(text: string) {
   const lower = text.toLowerCase();
 
-  const spanishHints = [
-    "quiero",
-    "necesito",
-    "ayúdame",
-    "crea",
-    "haz",
-    "anuncio",
-    "ventas",
-    "negocio",
-    "explica",
-    "dime",
-    "como",
-    "cómo",
-  ];
+  const spanishHints = ["quiero", "necesito", "dame", "crea", "haz"];
+  const englishHints = ["i want", "i need", "create", "make"];
 
-  const englishHints = [
-    "i want",
-    "i need",
-    "help me",
-    "create",
-    "make",
-    "sales",
-    "business",
-    "explain",
-    "tell me",
-    "how to",
-  ];
-
-  const hasSpanish = spanishHints.some((word) => lower.includes(word));
-  const hasEnglish = englishHints.some((word) => lower.includes(word));
+  const hasSpanish = spanishHints.some((w) => lower.includes(w));
+  const hasEnglish = englishHints.some((w) => lower.includes(w));
 
   if (hasSpanish && !hasEnglish) return "es";
   if (hasEnglish && !hasSpanish) return "en";
@@ -40,42 +15,42 @@ function detectLanguage(text: string) {
   return /[áéíóúñ¿¡]/i.test(text) ? "es" : "en";
 }
 
-function buildPrompt(idea: string, language: "es" | "en") {
-  const trimmedIdea = idea.trim();
+function generateFinalPrompt(idea: string, lang: "es" | "en") {
+  const cleanIdea = idea.trim();
 
-  if (language === "es") {
+  if (lang === "es") {
     return `Actúa como un experto en inteligencia artificial, marketing y generación de contenido.
 
-Tu objetivo es convertir la siguiente idea en un prompt altamente efectivo, claro y orientado a resultados reales.
+Tu tarea es ejecutar directamente la siguiente solicitud:
 
-IDEA:
-${trimmedIdea}
+${cleanIdea}
 
-INSTRUCCIONES:
-- Escribe el prompt como si fuera a usarse directamente en ChatGPT
-- Hazlo específico, estructurado y accionable
-- Incluye contexto, objetivo claro y formato esperado
-- Optimízalo para obtener resultados de alto nivel
+Entrega una respuesta estructurada, clara y accionable.
 
-FORMATO FINAL:
-Entrega únicamente el prompt final listo para copiar, sin explicaciones adicionales.`;
+Incluye:
+- Estrategia o enfoque principal
+- Desarrollo paso a paso
+- Ejemplos concretos si aplican
+- Recomendaciones prácticas
+
+El resultado debe ser profesional, listo para usarse y orientado a resultados reales.`;
   }
 
-  return `Act as an expert in AI, marketing, and content generation.
+  return `Act as an expert in AI, marketing, and content creation.
 
-Your goal is to turn the following idea into a highly effective, clear, and results-oriented prompt.
+Your task is to directly execute the following request:
 
-IDEA:
-${trimmedIdea}
+${cleanIdea}
 
-INSTRUCTIONS:
-- Write the prompt as if it will be used directly in ChatGPT
-- Make it specific, structured, and actionable
-- Include context, a clear objective, and the expected format
-- Optimize it to get high-level results
+Deliver a clear, structured, and actionable response.
 
-FINAL FORMAT:
-Return only the final prompt, ready to copy, with no extra explanations.`;
+Include:
+- Main strategy or approach
+- Step-by-step breakdown
+- Concrete examples if applicable
+- Practical recommendations
+
+The result must be professional, ready to use, and focused on real outcomes.`;
 }
 
 export async function POST(req: Request) {
@@ -90,19 +65,18 @@ export async function POST(req: Request) {
       );
     }
 
-    const language = detectLanguage(idea);
-    const prompt = buildPrompt(idea, language);
+    const lang = detectLanguage(idea);
+    const prompt = generateFinalPrompt(idea, lang);
 
     return NextResponse.json({
       prompt,
       counterIncrement: 1,
-      visibleMode: "Básico",
     });
   } catch (error: any) {
-    console.error("ERROR EN /api/generate:", error);
+    console.error("ERROR:", error);
 
     return NextResponse.json(
-      { error: error?.message || "Error generando prompt." },
+      { error: "Error generando prompt." },
       { status: 500 }
     );
   }
