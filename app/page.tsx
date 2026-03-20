@@ -17,19 +17,15 @@ function isValidEmail(email: string) {
 
 export default function HomePage() {
   const [idea, setIdea] = useState("");
-  const [email, setEmail] = useState("");
-  const [category, setCategory] = useState("Marketing");
-  const [detail, setDetail] = useState("Profesional");
-  const [platform, setPlatform] = useState("ChatGPT");
   const [result, setResult] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const [dailyUsed, setDailyUsed] = useState(0);
-  const [totalCounter, setTotalCounter] = useState(32541);
+  const [errorMessage, setErrorMessage] = useState("");
   const [copied, setCopied] = useState(false);
   const [sendEmail, setSendEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
+  const [dailyUsed, setDailyUsed] = useState(0);
+  const [counter, setCounter] = useState(32541);
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -54,7 +50,7 @@ export default function HomePage() {
 
     const total = localStorage.getItem(COUNTER_KEY);
     if (total) {
-      setTotalCounter(Number(total));
+      setCounter(Number(total));
     } else {
       localStorage.setItem(COUNTER_KEY, "32541");
     }
@@ -69,29 +65,26 @@ export default function HomePage() {
     }
 
     const timer = setTimeout(() => {
-      setTimeLeft((prev) => prev - 1);
+      setTimeLeft((t) => t - 1);
     }, 1000);
 
     return () => clearTimeout(timer);
   }, [timeLeft, result]);
 
-  function updateDailyUsage(nextCount: number) {
+  function updateUsage() {
     const today = getTodayKey();
+    const next = dailyUsed + 1;
+
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ date: today, count: nextCount })
+      JSON.stringify({ date: today, count: next })
     );
-    setDailyUsed(nextCount);
+
+    setDailyUsed(next);
   }
 
-  function updateTotalCounter(increment: number) {
-    const next = totalCounter + increment;
-    localStorage.setItem(COUNTER_KEY, String(next));
-    setTotalCounter(next);
-  }
-
-  function goToPricing(plan: "premium" | "experto") {
-    window.location.href = `/pricing?plan=${plan}`;
+  function goToPricing() {
+    window.location.href = "/pricing";
   }
 
   async function handleGenerate() {
@@ -100,20 +93,8 @@ export default function HomePage() {
       return;
     }
 
-    if (!email.trim()) {
-      setErrorMessage("Ingresa tu correo para generar tu prompt.");
-      return;
-    }
-
-    if (!isValidEmail(email)) {
-      setErrorMessage("Ingresa un correo válido.");
-      return;
-    }
-
     if (dailyUsed >= DAILY_LIMIT) {
-      setErrorMessage(
-        "Ya usaste tu prompt gratis de hoy. Desbloquea Premium para seguir."
-      );
+      setErrorMessage("Ya usaste tu prompt gratis de hoy.");
       return;
     }
 
@@ -123,21 +104,15 @@ export default function HomePage() {
     setSent(false);
 
     try {
-      const response = await fetch("/api/generate", {
+      const res = await fetch("/api/generate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          idea,
-          email,
-          category,
-          detail,
-          platform,
-        }),
+        body: JSON.stringify({ idea }),
       });
 
-      const text = await response.text();
+      const text = await res.text();
       let data: any;
 
       try {
@@ -147,23 +122,21 @@ export default function HomePage() {
         return;
       }
 
-      if (!response.ok) {
+      if (!res.ok) {
         setErrorMessage(data.error || "No se pudo generar el prompt.");
         return;
       }
 
       setResult(data.prompt || "");
-      setSendEmail(email);
       setTimeLeft(60);
-      updateDailyUsage(dailyUsed + 1);
 
-      if (data.counterIncrement) {
-        updateTotalCounter(data.counterIncrement);
-      }
-    } catch (error: any) {
-      setErrorMessage(
-        error?.message || "Ocurrió un error al generar el prompt."
-      );
+      updateUsage();
+
+      const nextCounter = counter + 1;
+      setCounter(nextCounter);
+      localStorage.setItem(COUNTER_KEY, String(nextCounter));
+    } catch {
+      setErrorMessage("Error generando prompt");
     } finally {
       setLoading(false);
     }
@@ -174,10 +147,7 @@ export default function HomePage() {
 
     navigator.clipboard.writeText(result);
     setCopied(true);
-
-    setTimeout(() => {
-      setCopied(false);
-    }, 2000);
+    setTimeout(() => setCopied(false), 2000);
   }
 
   async function sendPromptEmail() {
@@ -191,16 +161,15 @@ export default function HomePage() {
       return;
     }
 
+    setErrorMessage("");
+
     try {
       const response = await fetch("/api/send-prompt", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          email: sendEmail,
-          prompt: result,
-        }),
+        body: JSON.stringify({ email: sendEmail, prompt: result }),
       });
 
       const text = await response.text();
@@ -219,9 +188,8 @@ export default function HomePage() {
       }
 
       setSent(true);
-      setErrorMessage("");
-    } catch (error: any) {
-      setErrorMessage(error?.message || "Error enviando correo.");
+    } catch {
+      setErrorMessage("Error enviando correo.");
     }
   }
 
@@ -233,11 +201,11 @@ export default function HomePage() {
         <div className="w-full">
           <div className="mx-auto max-w-4xl text-center">
             <div className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70">
-              1 prompt gratis al día · acceso Pro por correo
+              1 prompt gratis al día · Premium $5 USD/mes
             </div>
 
             <h1 className="mt-6 text-5xl font-bold tracking-tight md:text-7xl">
-              PromptLife NUEVO
+              PromptLife
             </h1>
 
             <p className="mt-6 text-lg leading-8 text-white/70 md:text-xl">
@@ -247,7 +215,7 @@ export default function HomePage() {
 
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-sm text-white/60">
               <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2">
-                Prompts generados: {totalCounter.toLocaleString()}
+                Prompts generados: {counter.toLocaleString()}
               </span>
               <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2">
                 Gratis restantes hoy: {dailyRemaining}
@@ -262,15 +230,15 @@ export default function HomePage() {
               </button>
 
               <button
-                onClick={() => goToPricing("premium")}
+                onClick={goToPricing}
                 className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/10"
               >
                 Premium 🔒
               </button>
 
               <button
-                onClick={() => goToPricing("experto")}
-                className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm font-medium text-white/70 transition hover:bg-white/10"
+                disabled
+                className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm font-medium text-white/50 transition"
               >
                 Experto (próximamente)
               </button>
@@ -283,50 +251,6 @@ export default function HomePage() {
               className="min-h-44 w-full rounded-2xl border border-white/10 bg-black/30 p-5 text-base text-white placeholder:text-white/35 outline-none"
             />
 
-            <div className="mt-5 grid gap-3 md:grid-cols-4">
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="rounded-2xl border border-white/10 bg-black/30 p-3 text-white outline-none"
-              >
-                <option>Marketing</option>
-                <option>Contenido</option>
-                <option>Negocios</option>
-                <option>Programación</option>
-                <option>Automatización</option>
-                <option>Educación</option>
-              </select>
-
-              <select
-                value={detail}
-                onChange={(e) => setDetail(e.target.value)}
-                className="rounded-2xl border border-white/10 bg-black/30 p-3 text-white outline-none"
-              >
-                <option>Profesional</option>
-                <option>Simple</option>
-                <option>Experto</option>
-              </select>
-
-              <select
-                value={platform}
-                onChange={(e) => setPlatform(e.target.value)}
-                className="rounded-2xl border border-white/10 bg-black/30 p-3 text-white outline-none"
-              >
-                <option>ChatGPT</option>
-                <option>Claude</option>
-                <option>Gemini</option>
-                <option>General</option>
-              </select>
-
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Tu correo"
-                className="rounded-2xl border border-white/10 bg-black/30 p-3 text-white placeholder:text-white/35 outline-none"
-              />
-            </div>
-
             <button
               onClick={handleGenerate}
               disabled={loading}
@@ -336,8 +260,8 @@ export default function HomePage() {
             </button>
 
             <p className="mt-4 text-center text-sm text-white/55">
-              Básico gratis: 1 al día. Ingresa tu correo para generar. Premium
-              desbloquea prompts ilimitados por $5 USD/mes.
+              Genera una vista previa gratis. Después puedes copiarla o
+              enviártela a tu correo.
             </p>
           </div>
 
@@ -354,12 +278,6 @@ export default function HomePage() {
                   Prompt generado
                 </p>
 
-                <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs text-white/70">
-                  Modo: básico
-                </span>
-              </div>
-
-              <div className="mb-4 flex flex-wrap items-center gap-3">
                 <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs text-white/70">
                   Se borra en {timeLeft}s
                 </span>
@@ -412,12 +330,28 @@ export default function HomePage() {
                 </div>
 
                 <div className="mt-3 text-xs text-cyan-300">
-                  No te llenes de spam y protege tu privacidad. Quantum Mail es
-                  tu mejor opción para evitar basura y registros invasivos.
+                  No te llenes de spam y protege tu privacidad con correos
+                  temporales. Quantum Mail es tu mejor opción para evitar basura
+                  y registros invasivos.
                 </div>
               </div>
             </div>
           )}
+
+          <div className="mx-auto mt-8 max-w-4xl rounded-3xl border border-cyan-400/20 bg-cyan-400/5 p-5 text-center">
+            <p className="text-sm text-cyan-100/80">
+              ¿No quieres llenar tu correo de spam?
+            </p>
+
+            <p className="mt-2 text-lg font-semibold text-cyan-200">
+              Quantum Mail te ayuda a proteger tu privacidad con correos
+              temporales al instante.
+            </p>
+
+            <button className="mt-4 rounded-2xl border border-cyan-300/30 px-5 py-3 text-sm font-medium text-cyan-100 transition hover:bg-cyan-300/10">
+              Ir a Quantum Mail
+            </button>
+          </div>
         </div>
       </section>
     </main>
