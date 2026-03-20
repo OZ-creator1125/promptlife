@@ -72,6 +72,19 @@ export default function HomePage() {
     return () => clearTimeout(timer);
   }, [timeLeft, result]);
 
+  // Contador "vivo" mientras la persona está en la página
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCounter((prev) => {
+        const next = prev + 1;
+        localStorage.setItem(COUNTER_KEY, String(next));
+        return next;
+      });
+    }, 6000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   function updateUsage() {
     const today = getTodayKey();
     const next = dailyUsed + 1;
@@ -129,7 +142,7 @@ export default function HomePage() {
       }
 
       setResult(data.prompt || "");
-      setTimeLeft(30);
+      setTimeLeft(60);
 
       if (!TEST_MODE) {
         updateUsage();
@@ -197,6 +210,7 @@ export default function HomePage() {
   }
 
   const dailyRemaining = Math.max(0, DAILY_LIMIT - dailyUsed);
+  const isUrgent = timeLeft > 0 && timeLeft <= 20;
 
   return (
     <main className="min-h-screen bg-neutral-950 text-white">
@@ -302,7 +316,13 @@ export default function HomePage() {
                   Prompt generado
                 </p>
 
-                <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs text-white/70">
+                <span
+                  className={`rounded-full border px-3 py-1 text-xs ${
+                    isUrgent
+                      ? "animate-pulse border-red-400/30 bg-red-500/10 text-red-300"
+                      : "border-white/10 bg-black/30 text-white/70"
+                  }`}
+                >
                   Se borra en {timeLeft}s
                 </span>
               </div>
@@ -332,7 +352,13 @@ export default function HomePage() {
                 </button>
               </div>
 
-              <div className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-4">
+              <div
+                className={`mt-6 rounded-2xl border p-4 transition ${
+                  isUrgent
+                    ? "animate-pulse border-yellow-400/30 bg-yellow-400/10"
+                    : "border-white/10 bg-black/20"
+                }`}
+              >
                 <p className="mb-2 text-sm text-white/80">
                   Este prompt también puede enviarse a tu correo
                 </p>
